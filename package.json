@@ -1,0 +1,10 @@
+{
+  "name": "dentalcontent",
+  "scripts": {
+    "dev": "concurrently --names \"BACK,FRONT\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix dentalcontent-backend\" \"npm run dev --prefix dentalcontent-frontend -- -p 3001\"",
+    "install:all": "npm install --prefix dentalcontent-backend && npm install --prefix dentalcontent-frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

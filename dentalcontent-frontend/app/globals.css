@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  :root {
+    --font-playfair: 'Playfair Display', serif;
+    --font-instrument: 'Instrument Sans', sans-serif;
+  }
+
+  body {
+    background: #FAFAF8;
+    color: #1A1A18;
+    font-family: 'Instrument Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #F5F4F0; }
+  ::-webkit-scrollbar-thumb { background: #D0CEC8; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #999990; }
+
+  /* Select arrow */
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999990' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px !important;
+  }
+  select option { background: white; color: #1A1A18; }
+}
+
+@layer utilities {
+  .font-playfair { font-family: var(--font-playfair); }
+  .font-instrument { font-family: var(--font-instrument); }
+}
+
+/* react-big-calendar — Editorial Clínico theme */
+.rbc-calendar {
+  background: transparent;
+  color: #1A1A18;
+  font-family: 'Instrument Sans', sans-serif;
+}
+.rbc-header {
+  background: #F5F4F0;
+  border-color: #E8E6E0 !important;
+  padding: 10px !important;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #999990;
+  font-weight: 600;
+}
+.rbc-month-view, .rbc-time-view { border-color: #E8E6E0 !important; }
+.rbc-day-bg { border-color: #E8E6E0 !important; }
+.rbc-today { background: #E8F4EE !important; }
+.rbc-off-range-bg { background: #F5F4F0 !important; }
+.rbc-off-range .rbc-button-link { color: #C8C6C0 !important; }
+.rbc-event {
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  padding: 2px 6px !important;
+  border: none !important;
+  font-family: 'Instrument Sans', sans-serif !important;
+}
+.rbc-toolbar button {
+  color: #555550 !important;
+  background: #FFFFFF !important;
+  border: 1px solid #E8E6E0 !important;
+  border-radius: 6px !important;
+  padding: 6px 14px !important;
+  font-family: 'Instrument Sans', sans-serif !important;
+  font-size: 13px !important;
+}
+.rbc-toolbar button:hover { background: #F5F4F0 !important; }
+.rbc-toolbar button.rbc-active {
+  background: #1A1A18 !important;
+  color: white !important;
+  border-color: #1A1A18 !important;
+}
+.rbc-toolbar-label {
+  font-family: 'Playfair Display', serif !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  color: #1A1A18 !important;
+}
+.rbc-date-cell { padding: 6px 8px !important; font-size: 12px !important; color: #555550; }
+.rbc-date-cell.rbc-now { font-weight: 700; color: #2D6A4F; }
