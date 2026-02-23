@@ -91,8 +91,8 @@ export default function CalendarPage() {
           <Calendar
             localizer={localizer}
             events={events}
-            startAccessor="start"
-            endAccessor="end"
+            startAccessor={(event: any) => event.start}
+            endAccessor={(event: any) => event.end}
             style={{ height: 620 }}
             culture="pt-BR"
             messages={messages}
