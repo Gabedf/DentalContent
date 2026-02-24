@@ -6,6 +6,8 @@ interface GenerateImageParams {
   style: 'clean' | 'bold' | 'warm'
   content_type?: string
   theme?: string
+  headline?: string
+  caption?: string
 }
 
 interface ImageResult {

@@ -32,9 +32,11 @@ const STYLES = [
 interface Props {
   contentType?: string
   theme?: string
+  headline?: string
+  caption?: string
 }
 
-export default function ImageGenerator({ contentType, theme }: Props) {
+export default function ImageGenerator({ contentType, theme, headline, caption }: Props) {
   const { user } = useAuthStore()
   const [selectedStyle, setSelectedStyle] = useState<'clean' | 'bold' | 'warm'>('clean')
   const [generatedImage, setGeneratedImage] = useState<{ url: string; style: string } | null>(null)
@@ -51,6 +53,8 @@ export default function ImageGenerator({ contentType, theme }: Props) {
       style: selectedStyle,
       content_type: contentType,
       theme,
+      headline,
+      caption,
     })
     setGeneratedImage({ url: result.url, style: result.style })
     toast.success('Imagem gerada! Faça o download em até 1 hora.')

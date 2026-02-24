@@ -3,44 +3,79 @@ const db = require('../db');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Prompts base por estilo visual
 const STYLE_PROMPTS = {
   clean: {
     label: 'Clean Clínico',
-    prompt: `Professional dental clinic photography for Instagram post. 
-      Minimalist aesthetic, white and cream tones, soft natural lighting, 
-      clean background, premium dental equipment subtly visible, 
-      elegant and trustworthy atmosphere. Square format 1:1, 
-      ultra high quality, no text, no people, no teeth close-ups.`,
+    suffix: `Visual style: minimalist dental clinic photography, white and cream tones, 
+      soft natural lighting, clean background, premium aesthetic, 
+      elegant and trustworthy atmosphere. Square format 1:1, ultra high quality, 
+      no text overlay, no watermark.`,
+    dalleStyle: 'natural',
   },
   bold: {
     label: 'Bold Editorial',
-    prompt: `Bold editorial photography for dental clinic Instagram post. 
-      Dark sophisticated background, high contrast, dramatic lighting, 
-      modern and luxurious dental aesthetic, strong visual impact, 
-      magazine-style composition. Square format 1:1, 
-      ultra high quality, no text, no people.`,
+    suffix: `Visual style: bold editorial photography, dark sophisticated background, 
+      high contrast, dramatic studio lighting, modern and luxurious dental aesthetic, 
+      strong visual impact, magazine-quality composition. Square format 1:1, 
+      ultra high quality, no text overlay, no watermark.`,
+    dalleStyle: 'vivid',
   },
   warm: {
     label: 'Warm Lifestyle',
-    prompt: `Warm lifestyle photography for dental clinic Instagram post. 
-      Golden hour lighting, warm tones, cozy and welcoming dental office, 
-      human and approachable atmosphere, natural elements, 
-      soft bokeh background, health and wellness vibe. Square format 1:1, 
-      ultra high quality, no text.`,
+    suffix: `Visual style: warm lifestyle photography, golden hour lighting, amber and warm tones, 
+      cozy welcoming dental office environment, human and approachable atmosphere, 
+      health and wellness vibe, soft bokeh. Square format 1:1, 
+      ultra high quality, no text overlay, no watermark.`,
+    dalleStyle: 'natural',
   },
 };
 
-async function generateImage(userId, { style, content_type, theme }) {
+const CONTENT_TYPE_CONTEXT = {
+  educativo:          'educational dental health content',
+  autoridade:         'dental expertise and professional authority',
+  quebra_objecao:     'addressing patient concerns about dental treatment',
+  bastidores:         'behind the scenes of a dental clinic',
+  depoimento:         'patient satisfaction and dental transformation',
+  procedimento:       'dental procedure and clinical excellence',
+};
+
+function buildImagePrompt(style, { content_type, theme, headline, caption }) {
+  const styleConfig = STYLE_PROMPTS[style];
+  const contentContext = CONTENT_TYPE_CONTEXT[content_type] || 'dental clinic';
+
+  let contextParts = [];
+
+  // Usa headline como contexto principal se disponível
+  if (headline) {
+    // Remove caracteres especiais e limita tamanho
+    const cleanHeadline = headline.replace(/[🦷✨💎🏆❓🌟]/g, '').trim().slice(0, 120);
+    contextParts.push(`The image should visually represent: "${cleanHeadline}"`);
+  }
+
+  // Usa tema específico
+  if (theme) {
+    contextParts.push(`Topic: ${theme}`);
+  }
+
+  // Usa tipo de conteúdo como fallback
+  contextParts.push(`Category: ${contentContext}`);
+
+  // Extrai palavras-chave da legenda se disponível
+  if (caption && !headline) {
+    const words = caption.split(' ').slice(0, 15).join(' ');
+    contextParts.push(`Context: ${words}`);
+  }
+
+  const contextString = contextParts.join('. ');
+
+  return `Professional Instagram post image for a dental clinic. ${contextString}. ${styleConfig.suffix}`;
+}
+
+async function generateImage(userId, { style, content_type, theme, headline, caption }) {
   const styleConfig = STYLE_PROMPTS[style];
   if (!styleConfig) throw { status: 400, message: 'Estilo inválido. Use: clean, bold ou warm.' };
 
-  // Enriquece o prompt com o tipo de conteúdo
-  const contentContext = theme
-    ? `Context: dental post about "${theme}". `
-    : `Context: dental ${content_type || 'educational'} post. `;
-
-  const fullPrompt = contentContext + styleConfig.prompt;
+  const fullPrompt = buildImagePrompt(style, { content_type, theme, headline, caption });
 
   const response = await openai.images.generate({
     model: 'dall-e-3',
@@ -48,13 +83,12 @@ async function generateImage(userId, { style, content_type, theme }) {
     n: 1,
     size: '1024x1024',
     quality: 'standard',
-    style: style === 'bold' ? 'vivid' : 'natural',
+    style: styleConfig.dalleStyle,
   });
 
   const imageUrl = response.data[0].url;
   const revisedPrompt = response.data[0].revised_prompt;
 
-  // Registra no banco para controle de limite
   await db.query(
     `INSERT INTO image_generations (user_id, style, content_type, theme, revised_prompt)
      VALUES ($1, $2, $3, $4, $5)`,

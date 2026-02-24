@@ -219,6 +219,8 @@ export default function GeneratePage() {
                 <ImageGenerator
                   contentType={result.content_type}
                   theme={form.theme}
+                  headline={result.headlines?.[0]}
+                  caption={result.caption}
                 />
               </>
             )}

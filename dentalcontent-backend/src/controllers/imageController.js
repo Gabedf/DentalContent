@@ -2,10 +2,10 @@ const imageService = require('../services/imageService');
 
 async function generate(req, res, next) {
   try {
-    const { style, content_type, theme } = req.body;
+    const { style, content_type, theme, headline, caption } = req.body;
     if (!style) return res.status(400).json({ error: 'Informe o estilo: clean, bold ou warm.' });
 
-    const result = await imageService.generateImage(req.user.id, { style, content_type, theme });
+    const result = await imageService.generateImage(req.user.id, { style, content_type, theme, headline, caption });
     res.json(result);
   } catch (err) {
     next(err);
