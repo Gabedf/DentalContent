@@ -2,31 +2,14 @@
 import { useState } from 'react'
 import { useImageGeneration, useImageUsage } from '@/hooks/useImageGeneration'
 import { useAuthStore } from '@/lib/authStore'
-import { Download, Image as ImageIcon, Sparkles, Lock } from 'lucide-react'
+import { Download, Sparkles, Lock, RotateCcw } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const STYLES = [
-  {
-    id: 'clean' as const,
-    label: 'Clean Clínico',
-    description: 'Minimalista, tons claros, premium',
-    preview: 'bg-gradient-to-br from-stone-100 to-white border-stone-200',
-    dot: 'bg-stone-400',
-  },
-  {
-    id: 'bold' as const,
-    label: 'Bold Editorial',
-    description: 'Escuro, contraste alto, impactante',
-    preview: 'bg-gradient-to-br from-stone-800 to-stone-950 border-stone-700',
-    dot: 'bg-stone-300',
-  },
-  {
-    id: 'warm' as const,
-    label: 'Warm Lifestyle',
-    description: 'Tons quentes, acolhedor, humano',
-    preview: 'bg-gradient-to-br from-amber-100 to-orange-50 border-amber-200',
-    dot: 'bg-amber-500',
-  },
+  { id: 'clean', label: 'Clean', preview: 'from-stone-50 to-white', dot: 'bg-stone-400' },
+  { id: 'bold', label: 'Bold', preview: 'from-stone-800 to-stone-950', dot: 'bg-white' },
+  { id: 'warm', label: 'Warm', preview: 'from-amber-100 to-orange-50', dot: 'bg-amber-500' },
+  { id: 'gradient', label: 'Modern', preview: 'from-violet-100 to-blue-50', dot: 'bg-violet-500' },
 ]
 
 interface Props {
@@ -36,28 +19,27 @@ interface Props {
   caption?: string
 }
 
-export default function ImageGenerator({ contentType, theme, headline, caption }: Props) {
+export default function ImageGenerator({ theme, headline }: Props) {
   const { user } = useAuthStore()
-  const [selectedStyle, setSelectedStyle] = useState<'clean' | 'bold' | 'warm'>('clean')
-  const [generatedImage, setGeneratedImage] = useState<{ url: string; style: string } | null>(null)
+  const [selectedStyle, setSelectedStyle] = useState('clean')
+  const [generatedImage, setGeneratedImage] = useState<{ url: string } | null>(null)
   const { generateMutation } = useImageGeneration()
-  const { data: usage } = useImageUsage()
+  const { data: usage, refetch } = useImageUsage()
 
   const canGenerate = usage?.available !== false
   const isEssencial = user?.plan === 'essencial'
-  const isGratis = user?.plan === 'gratis'
 
   const handleGenerate = async () => {
     if (!canGenerate) return
+    setGeneratedImage(null)
     const result = await generateMutation.mutateAsync({
       style: selectedStyle,
-      content_type: contentType,
-      theme,
       headline,
-      caption,
+      customDescription: theme,
     })
-    setGeneratedImage({ url: result.url, style: result.style })
-    toast.success('Imagem gerada! Faça o download em até 1 hora.')
+    setGeneratedImage({ url: result.url })
+    refetch()
+    toast.success('Imagem gerada! Disponível por 1 hora.')
   }
 
   const handleDownload = async () => {
@@ -72,67 +54,50 @@ export default function ImageGenerator({ contentType, theme, headline, caption }
       a.click()
       URL.revokeObjectURL(url)
     } catch {
-      toast.error('Erro ao baixar. Tente clicar com botão direito → Salvar imagem.')
+      toast.error('Clique com botão direito na imagem → Salvar imagem.')
     }
   }
 
-  // Plano essencial não tem imagens
   if (isEssencial) {
     return (
-      <div className="border border-border rounded-xl p-5 bg-surface">
-        <div className="flex items-center gap-2 mb-2">
-          <Lock size={16} className="text-ink-muted" />
-          <span className="font-semibold text-sm text-ink">Geração de Imagens</span>
-        </div>
-        <p className="text-[13px] text-ink-muted mb-3">
-          Disponível nos planos Pro e Clínica. Gere imagens para Instagram criadas especialmente para o seu conteúdo.
-        </p>
-        <a href="/app/settings" className="text-[13px] font-medium text-green hover:underline">
-          Fazer upgrade →
-        </a>
+      <div className="border border-border rounded-xl p-4 bg-surface flex items-center gap-3">
+        <Lock size={15} className="text-ink-muted flex-shrink-0" />
+        <p className="text-[13px] text-ink-muted flex-1">Geração de imagens disponível nos planos Pro e Clínica.</p>
+        <a href="/app/settings" className="text-[13px] font-medium text-green hover:underline whitespace-nowrap">Upgrade →</a>
       </div>
     )
   }
 
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-surface">
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+      <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles size={16} className="text-green" />
-          <span className="font-semibold text-sm text-ink">Gerar Imagem para o Post</span>
+          <Sparkles size={14} className="text-green" />
+          <span className="font-semibold text-[13px] text-ink">Gerar imagem para este post</span>
         </div>
         {usage && (
-          <span className="text-[11px] text-ink-muted bg-surface2 px-2 py-1 rounded-full">
-            {isGratis
-              ? `${usage.used}/${usage.limit} imagem grátis`
-              : `${usage.used}/${usage.limit} este mês`}
+          <span className="text-[11px] text-ink-muted">
+            {usage.used}/{usage.limit === 'unlimited' ? '∞' : usage.limit} {user?.plan === 'gratis' ? 'total' : 'este mês'}
           </span>
         )}
       </div>
 
-      <div className="p-5">
-        {/* Seleção de estilo */}
-        {!generatedImage && (
+      <div className="p-4">
+        {!generatedImage ? (
           <>
-            <p className="text-[12px] text-ink-muted mb-3 uppercase tracking-wider font-medium">Escolha o estilo visual</p>
-            <div className="grid grid-cols-3 gap-3 mb-5">
-              {STYLES.map(style => (
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {STYLES.map(s => (
                 <button
-                  key={style.id}
-                  onClick={() => setSelectedStyle(style.id)}
-                  className={`rounded-xl border-2 p-3 text-left transition-all ${
-                    selectedStyle === style.id
-                      ? 'border-green shadow-sm'
-                      : 'border-border hover:border-border-strong'
+                  key={s.id}
+                  onClick={() => setSelectedStyle(s.id)}
+                  className={`rounded-lg border-2 p-2 text-center transition-all ${
+                    selectedStyle === s.id ? 'border-green' : 'border-border hover:border-border-strong'
                   }`}
                 >
-                  {/* Preview visual */}
-                  <div className={`w-full aspect-square rounded-lg border mb-2.5 ${style.preview} flex items-center justify-center`}>
-                    <div className={`w-3 h-3 rounded-full ${style.dot}`} />
+                  <div className={`w-full h-8 rounded bg-gradient-to-br ${s.preview} mb-1.5 flex items-center justify-center border border-border/30`}>
+                    <div className={`w-2 h-2 rounded-full ${s.dot}`} />
                   </div>
-                  <p className="text-[12px] font-semibold text-ink leading-tight">{style.label}</p>
-                  <p className="text-[11px] text-ink-muted mt-0.5 leading-tight">{style.description}</p>
+                  <p className="text-[11px] font-medium text-ink">{s.label}</p>
                 </button>
               ))}
             </div>
@@ -140,71 +105,38 @@ export default function ImageGenerator({ contentType, theme, headline, caption }
             <button
               onClick={handleGenerate}
               disabled={!canGenerate || generateMutation.isPending}
-              className="w-full bg-ink text-white rounded-xl py-3 text-[13px] font-semibold hover:bg-ink/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-ink text-white rounded-xl py-2.5 text-[13px] font-semibold hover:bg-ink/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {generateMutation.isPending ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Gerando imagem...
-                </>
+                <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Gerando...</>
               ) : !canGenerate ? (
-                <>
-                  <Lock size={14} />
-                  Limite atingido
-                </>
+                <><Lock size={13} /> Limite atingido</>
               ) : (
-                <>
-                  <ImageIcon size={14} />
-                  Gerar imagem — {STYLES.find(s => s.id === selectedStyle)?.label}
-                </>
+                <><Sparkles size={13} /> Gerar imagem</>
               )}
             </button>
 
             {!canGenerate && (
-              <p className="text-[12px] text-ink-muted text-center mt-2">
-                <a href="/app/settings" className="text-green hover:underline">Fazer upgrade</a> para gerar mais imagens.
+              <p className="text-[11px] text-ink-muted text-center mt-2">
+                <a href="/app/settings" className="text-green hover:underline">Fazer upgrade</a> para mais imagens.
               </p>
             )}
-
-            <p className="text-[11px] text-ink-muted text-center mt-3">
-              ⏱ A imagem fica disponível por 1 hora após a geração
-            </p>
+            <p className="text-[11px] text-ink-faint text-center mt-2">Imagem expira em 1 hora · Para mais opções: <a href="/app/images" className="text-green hover:underline">Gerar Imagem</a></p>
           </>
-        )}
-
-        {/* Imagem gerada */}
-        {generatedImage && (
-          <div className="animate-slide-up">
-            <div className="relative rounded-xl overflow-hidden mb-3 bg-surface2">
-              <img
-                src={generatedImage.url}
-                alt="Imagem gerada"
-                className="w-full aspect-square object-cover"
-              />
-              <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full">
-                Expira em ~1h
-              </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="relative rounded-xl overflow-hidden aspect-square bg-surface2">
+              <img src={generatedImage.url} alt="Gerada" className="w-full h-full object-cover" />
+              <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full">~1h</div>
             </div>
-
             <div className="flex gap-2">
-              <button
-                onClick={handleDownload}
-                className="flex-1 bg-green text-white rounded-xl py-3 text-[13px] font-semibold hover:bg-green/90 transition-all flex items-center justify-center gap-2"
-              >
-                <Download size={14} />
-                Baixar imagem
+              <button onClick={handleDownload} className="flex-1 bg-green text-white rounded-xl py-2.5 text-[13px] font-semibold hover:bg-green/90 transition-all flex items-center justify-center gap-1.5">
+                <Download size={13} /> Baixar
               </button>
-              <button
-                onClick={() => setGeneratedImage(null)}
-                className="px-4 bg-surface2 text-ink rounded-xl py-3 text-[13px] font-medium hover:bg-border transition-all border border-border"
-              >
-                Gerar outra
+              <button onClick={() => setGeneratedImage(null)} className="px-3 bg-surface2 border border-border text-ink rounded-xl text-[13px] hover:bg-border transition-all">
+                <RotateCcw size={13} />
               </button>
             </div>
-
-            <p className="text-[11px] text-ink-muted text-center mt-2">
-              Estilo: {generatedImage.style} · Formato 1080×1080px
-            </p>
           </div>
         )}
       </div>

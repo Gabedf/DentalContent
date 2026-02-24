@@ -3,9 +3,10 @@ import api from '@/lib/api'
 import toast from 'react-hot-toast'
 
 interface GenerateImageParams {
-  style: 'clean' | 'bold' | 'warm'
-  content_type?: string
-  theme?: string
+  style: string
+  visualTheme?: string
+  customDescription?: string
+  primaryColor?: string
   headline?: string
   caption?: string
 }
@@ -13,7 +14,7 @@ interface GenerateImageParams {
 interface ImageResult {
   url: string
   style: string
-  revised_prompt: string
+  provider: string
   expires_in: string
 }
 

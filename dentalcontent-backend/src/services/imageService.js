@@ -3,102 +3,181 @@ const db = require('../db');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const STYLE_PROMPTS = {
+// ── Provider abstraction (pronto para Ideogram) ──────────────────────────────
+// Quando adicionar Ideogram, basta implementar a função generateWithIdeogram
+// e trocar o provider abaixo.
+const PROVIDER = process.env.IMAGE_PROVIDER || 'dalle'; // 'dalle' | 'ideogram'
+
+// ── Estilos visuais ──────────────────────────────────────────────────────────
+const STYLES = {
   clean: {
     label: 'Clean Clínico',
-    suffix: `Visual style: minimalist dental clinic photography, white and cream tones, 
-      soft natural lighting, clean background, premium aesthetic, 
-      elegant and trustworthy atmosphere. Square format 1:1, ultra high quality, 
-      no text overlay, no watermark.`,
+    description: 'Minimalista, tons claros, premium',
+    stylePrompt: 'minimalist, white and cream background, soft natural lighting, clean composition, premium dental clinic aesthetic, lots of negative space, elegant, high-end',
     dalleStyle: 'natural',
   },
   bold: {
     label: 'Bold Editorial',
-    suffix: `Visual style: bold editorial photography, dark sophisticated background, 
-      high contrast, dramatic studio lighting, modern and luxurious dental aesthetic, 
-      strong visual impact, magazine-quality composition. Square format 1:1, 
-      ultra high quality, no text overlay, no watermark.`,
+    description: 'Escuro, contraste alto, impactante',
+    stylePrompt: 'bold editorial, dark background, high contrast, dramatic studio lighting, luxury aesthetic, strong visual impact, magazine quality, sophisticated',
     dalleStyle: 'vivid',
   },
   warm: {
     label: 'Warm Lifestyle',
-    suffix: `Visual style: warm lifestyle photography, golden hour lighting, amber and warm tones, 
-      cozy welcoming dental office environment, human and approachable atmosphere, 
-      health and wellness vibe, soft bokeh. Square format 1:1, 
-      ultra high quality, no text overlay, no watermark.`,
+    description: 'Tons quentes, acolhedor, humano',
+    stylePrompt: 'warm lifestyle, golden hour lighting, amber and warm tones, welcoming atmosphere, human connection, health and wellness, soft bokeh, approachable',
     dalleStyle: 'natural',
+  },
+  gradient: {
+    label: 'Gradient Modern',
+    description: 'Gradiente suave, moderno, digital',
+    stylePrompt: 'modern digital marketing, smooth gradient background, contemporary design, geometric elements, professional, social media ready, clean typography space',
+    dalleStyle: 'vivid',
   },
 };
 
-const CONTENT_TYPE_CONTEXT = {
-  educativo:          'educational dental health content',
-  autoridade:         'dental expertise and professional authority',
-  quebra_objecao:     'addressing patient concerns about dental treatment',
-  bastidores:         'behind the scenes of a dental clinic',
-  depoimento:         'patient satisfaction and dental transformation',
-  procedimento:       'dental procedure and clinical excellence',
+// ── Temas visuais focados em odontologia ─────────────────────────────────────
+const VISUAL_THEMES = {
+  smile_transformation: {
+    label: 'Transformação do Sorriso',
+    prompt: 'dental smile transformation concept, before and after aesthetic, beautiful smile, confidence, happiness',
+  },
+  clinical_premium: {
+    label: 'Clínica Premium',
+    prompt: 'premium dental clinic interior, modern equipment, professional environment, clean and sterile, high-end dental office',
+  },
+  aesthetic_procedure: {
+    label: 'Procedimento Estético',
+    prompt: 'dental aesthetic procedure concept, precision, care, professional dental work, cosmetic dentistry',
+  },
+  oral_health: {
+    label: 'Saúde Bucal',
+    prompt: 'oral health concept, prevention, hygiene, healthy teeth, wellness, dental care routine',
+  },
+  implant_technology: {
+    label: 'Tecnologia & Implante',
+    prompt: 'dental implant technology concept, advanced equipment, precision engineering, modern dentistry, titanium implant',
+  },
+  patient_trust: {
+    label: 'Confiança & Cuidado',
+    prompt: 'patient care and trust concept, gentle dental care, reassuring environment, professional empathy, comfortable experience',
+  },
+  whitening: {
+    label: 'Clareamento',
+    prompt: 'teeth whitening concept, bright white smile, luminous, radiant, cosmetic dental whitening treatment',
+  },
+  braces_aligners: {
+    label: 'Ortodontia',
+    prompt: 'orthodontic treatment concept, dental aligners, braces, teeth alignment, smile correction journey',
+  },
 };
 
-function buildImagePrompt(style, { content_type, theme, headline, caption }) {
-  const styleConfig = STYLE_PROMPTS[style];
-  const contentContext = CONTENT_TYPE_CONTEXT[content_type] || 'dental clinic';
+// ── Construção do prompt ─────────────────────────────────────────────────────
+function buildPrompt({ style, visualTheme, customDescription, primaryColor, headline }) {
+  const styleConfig = STYLES[style] || STYLES.clean;
+  const themeConfig = visualTheme ? VISUAL_THEMES[visualTheme] : null;
 
-  let contextParts = [];
+  const parts = [];
 
-  // Usa headline como contexto principal se disponível
+  // Base: Instagram marketing post
+  parts.push('Professional Instagram marketing post image for a dental clinic');
+
+  // Tema visual
+  if (themeConfig) {
+    parts.push(themeConfig.prompt);
+  }
+
+  // Headline do conteúdo (contexto adicional)
   if (headline) {
-    // Remove caracteres especiais e limita tamanho
-    const cleanHeadline = headline.replace(/[🦷✨💎🏆❓🌟]/g, '').trim().slice(0, 120);
-    contextParts.push(`The image should visually represent: "${cleanHeadline}"`);
+    const clean = headline.replace(/[🦷✨💎🏆❓🌟💡🔬]/g, '').trim().slice(0, 100);
+    parts.push(`visual concept for: "${clean}"`);
   }
 
-  // Usa tema específico
-  if (theme) {
-    contextParts.push(`Topic: ${theme}`);
+  // Descrição livre do usuário
+  if (customDescription && customDescription.trim()) {
+    parts.push(`additional context: ${customDescription.trim()}`);
   }
 
-  // Usa tipo de conteúdo como fallback
-  contextParts.push(`Category: ${contentContext}`);
-
-  // Extrai palavras-chave da legenda se disponível
-  if (caption && !headline) {
-    const words = caption.split(' ').slice(0, 15).join(' ');
-    contextParts.push(`Context: ${words}`);
+  // Cor base
+  if (primaryColor) {
+    parts.push(`primary color palette based on ${primaryColor}, use this color as accent and dominant tone throughout the composition`);
   }
 
-  const contextString = contextParts.join('. ');
+  // Estilo visual
+  parts.push(styleConfig.stylePrompt);
 
-  return `Professional Instagram post image for a dental clinic. ${contextString}. ${styleConfig.suffix}`;
+  // Restrições técnicas
+  parts.push('square format 1:1, ultra high quality, no text overlay, no watermark, Instagram ready, professional marketing visual');
+
+  return parts.join('. ');
 }
 
-async function generateImage(userId, { style, content_type, theme, headline, caption }) {
-  const styleConfig = STYLE_PROMPTS[style];
-  if (!styleConfig) throw { status: 400, message: 'Estilo inválido. Use: clean, bold ou warm.' };
-
-  const fullPrompt = buildImagePrompt(style, { content_type, theme, headline, caption });
+// ── Geração via DALL-E 3 ─────────────────────────────────────────────────────
+async function generateWithDalle({ prompt, style }) {
+  const styleConfig = STYLES[style] || STYLES.clean;
 
   const response = await openai.images.generate({
     model: 'dall-e-3',
-    prompt: fullPrompt,
+    prompt,
     n: 1,
     size: '1024x1024',
     quality: 'standard',
     style: styleConfig.dalleStyle,
   });
 
-  const imageUrl = response.data[0].url;
-  const revisedPrompt = response.data[0].revised_prompt;
+  return {
+    url: response.data[0].url,
+    revised_prompt: response.data[0].revised_prompt,
+  };
+}
+
+// ── Geração via Ideogram (pronto para ativar) ────────────────────────────────
+async function generateWithIdeogram({ prompt, style, primaryColor }) {
+  // TODO: ativar quando IDEOGRAM_API_KEY for configurado
+  // const response = await fetch('https://api.ideogram.ai/generate', {
+  //   method: 'POST',
+  //   headers: {
+  //     'Api-Key': process.env.IDEOGRAM_API_KEY,
+  //     'Content-Type': 'application/json',
+  //   },
+  //   body: JSON.stringify({
+  //     image_request: {
+  //       prompt,
+  //       model: 'V_2',
+  //       aspect_ratio: 'ASPECT_1_1',
+  //       style_type: style === 'bold' ? 'DESIGN' : 'REALISTIC',
+  //       magic_prompt_option: 'ON',
+  //     }
+  //   })
+  // });
+  // const data = await response.json();
+  // return { url: data.data[0].url, revised_prompt: prompt };
+  throw new Error('Ideogram não configurado ainda. Configure IDEOGRAM_API_KEY.');
+}
+
+// ── Função principal ─────────────────────────────────────────────────────────
+async function generateImage(userId, { style, visualTheme, customDescription, primaryColor, headline }) {
+  if (!STYLES[style]) throw { status: 400, message: 'Estilo inválido.' };
+
+  const prompt = buildPrompt({ style, visualTheme, customDescription, primaryColor, headline });
+
+  let result;
+  if (PROVIDER === 'ideogram' && process.env.IDEOGRAM_API_KEY) {
+    result = await generateWithIdeogram({ prompt, style, primaryColor });
+  } else {
+    result = await generateWithDalle({ prompt, style });
+  }
 
   await db.query(
-    `INSERT INTO image_generations (user_id, style, content_type, theme, revised_prompt)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [userId, style, content_type || null, theme || null, revisedPrompt]
+    `INSERT INTO image_generations (user_id, style, visual_theme, custom_description, primary_color, revised_prompt)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [userId, style, visualTheme || null, customDescription || null, primaryColor || null, result.revised_prompt]
   );
 
   return {
-    url: imageUrl,
-    style: styleConfig.label,
-    revised_prompt: revisedPrompt,
+    url: result.url,
+    style: STYLES[style].label,
+    provider: PROVIDER === 'ideogram' && process.env.IDEOGRAM_API_KEY ? 'ideogram' : 'dalle',
     expires_in: '1 hora',
   };
 }
@@ -131,4 +210,4 @@ async function getImageUsage(userId, plan) {
   };
 }
 
-module.exports = { generateImage, getImageUsage, STYLE_PROMPTS };
+module.exports = { generateImage, getImageUsage, STYLES, VISUAL_THEMES };

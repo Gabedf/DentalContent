@@ -5,7 +5,8 @@ const ctrl = require('../controllers/imageController');
 
 router.use(auth);
 
-router.post('/generate', checkImageLimit, ctrl.generate);
+router.get('/options', ctrl.getOptions);
 router.get('/usage', ctrl.usage);
+router.post('/generate', checkImageLimit, ctrl.generate);
 
 module.exports = router;

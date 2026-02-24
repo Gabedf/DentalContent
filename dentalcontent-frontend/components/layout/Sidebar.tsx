@@ -9,6 +9,7 @@ import { useUsage } from '@/hooks/useContents'
 const NAV = [
   { href: '/app/dashboard', label: 'Dashboard', section: 'Principal' },
   { href: '/app/generate', label: 'Gerar Conteúdo', section: 'Principal' },
+  { href: '/app/images', label: 'Gerar Imagem', section: 'Principal' },
   { href: '/app/kanban', label: 'Kanban', section: 'Organização' },
   { href: '/app/calendar', label: 'Calendário', section: 'Organização' },
   { href: '/app/settings', label: 'Configurações', section: 'Conta' },
