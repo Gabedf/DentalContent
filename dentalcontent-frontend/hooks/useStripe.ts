@@ -5,7 +5,7 @@ import api from '@/lib/api'
 
 export function useCheckout() {
   return useMutation({
-    mutationFn: async (plan: 'essencial' | 'pro' | 'clinica') => {
+    mutationFn: async (plan: 'gratis' | 'essencial' | 'pro' | 'clinica') => {
       const res = await api.post<{ url: string }>('/stripe/checkout', { plan })
       return res.data
     },
