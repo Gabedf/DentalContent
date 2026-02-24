@@ -1,9 +1,11 @@
 const db = require('../db');
 
+// Limites mensais por plano
 const PLAN_LIMITS = {
+  gratis:   10,
   essencial: 20,
-  pro: 60,
-  clinica: Infinity,
+  pro:       60,
+  clinica:   Infinity,
 };
 
 async function getMonthlyCount(userId) {
@@ -19,35 +21,16 @@ async function getMonthlyCount(userId) {
 
 async function checkPlanLimit(req, res, next) {
   try {
-    const { id: userId } = req.user;
-
-    console.log('=== PLAN LIMIT CHECK ===')
-    console.log('userId:', userId)
-
-    const userResult = await db.query(
-      'SELECT plan FROM users WHERE id = $1',
-      [userId]
-    );
-
-    console.log('userResult:', userResult.rows)
-
-    if (!userResult.rows.length) {
-      return res.status(404).json({ error: 'Usuário não encontrado.' });
-    }
-
-    const plan = userResult.rows[0].plan;
+    const { id: userId, plan } = req.user;
     const limit = PLAN_LIMITS[plan] ?? 0;
-
-    console.log('plan:', plan, '| limit:', limit)
 
     if (limit === Infinity) return next();
 
     const count = await getMonthlyCount(userId);
-    console.log('count:', count, '| limit:', limit)
 
     if (count >= limit) {
       return res.status(429).json({
-        error: 'Limite mensal de gerações atingido.',
+        error: 'Limite mensal de gerações atingido. Faça upgrade para continuar.',
         limit,
         used: count,
         plan,
@@ -57,7 +40,6 @@ async function checkPlanLimit(req, res, next) {
     req.generationCount = count;
     next();
   } catch (err) {
-    console.log('ERRO no planLimit:', err)
     next(err);
   }
 }

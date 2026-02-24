@@ -148,17 +148,17 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-3 gap-6">
             {[
               {
-                name: 'Essencial', price: 'R$ 97', period: '/mês', highlight: false,
+                name: 'Essencial', price: 'R$ 39', period: '/mês', highlight: false,
                 desc: 'Para começar a construir presença digital.',
                 features: ['20 gerações por mês', 'Todos os 6 formatos', 'Compliance CRO automático', 'Kanban editorial', 'Calendário integrado'],
               },
               {
-                name: 'Pro', price: 'R$ 197', period: '/mês', highlight: true,
+                name: 'Pro', price: 'R$ 79', period: '/mês', highlight: true,
                 desc: 'Para quem quer postar com consistência.',
                 features: ['60 gerações por mês', 'Todos os 6 formatos', 'Compliance CRO automático', 'Kanban editorial', 'Calendário integrado', 'Suporte prioritário'],
               },
               {
-                name: 'Clínica', price: 'R$ 347', period: '/mês', highlight: false,
+                name: 'Clínica', price: 'R$ 220', period: '/mês', highlight: false,
                 desc: 'Para clínicas com múltiplos profissionais.',
                 features: ['Gerações ilimitadas', 'Múltiplos perfis', 'Todos os 6 formatos', 'Compliance CRO automático', 'Kanban editorial', 'Calendário integrado', 'Suporte prioritário'],
               },

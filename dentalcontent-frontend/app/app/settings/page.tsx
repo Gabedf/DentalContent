@@ -136,10 +136,10 @@ export default function SettingsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => checkoutMutation.mutate(user?.plan === 'essencial' ? 'pro' : 'clinica')}
+                onClick={() => checkoutMutation.mutate(user?.plan === 'gratis' || user?.plan === 'essencial' ? (user?.plan === 'gratis' ? 'essencial' : 'pro') : 'clinica')}
                 loading={checkoutMutation.isPending}
               >
-                Fazer upgrade para {user?.plan === 'essencial' ? 'Pro — R$79/mês' : 'Clínica — R$129/mês'}
+                Fazer upgrade para {user?.plan === 'gratis' ? 'Essencial — R$39/mês' : user?.plan === 'essencial' ? 'Pro — R$79/mês' : 'Clínica — R$220/mês'}
               </Button>
             )}
           </Card>

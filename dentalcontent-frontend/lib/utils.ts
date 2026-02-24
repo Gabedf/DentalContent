@@ -41,6 +41,6 @@ export function getInitials(name: string): string {
 }
 
 export function getPlanLabel(plan: string): string {
-  const map: Record<string, string> = { essencial: 'Essencial', pro: 'Pro', clinica: 'Clínica' }
+  const map: Record<string, string> = { gratis: 'Grátis', essencial: 'Essencial', pro: 'Pro', clinica: 'Clínica' }
   return map[plan] || plan
 }
