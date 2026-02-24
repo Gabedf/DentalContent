@@ -47,4 +47,38 @@ function signToken(user) {
   );
 }
 
-module.exports = { register, login };
+
+
+async function googleAuth({ google_id, email, name, avatar }) {
+  // Busca usuário pelo email ou google_id
+  let result = await db.query(
+    'SELECT id, name, email, plan, active FROM users WHERE email = $1 OR google_id = $2',
+    [email, google_id]
+  );
+
+  let user = result.rows[0];
+
+  if (!user) {
+    // Cria novo usuário via Google — sem senha
+    const inserted = await db.query(
+      `INSERT INTO users (name, email, google_id, avatar, password_hash)
+       VALUES ($1, $2, $3, $4, '')
+       RETURNING id, name, email, plan, active`,
+      [name, email, google_id, avatar || null]
+    );
+    user = inserted.rows[0];
+  } else {
+    // Atualiza google_id e avatar se ainda não tinha
+    await db.query(
+      'UPDATE users SET google_id = $1, avatar = $2 WHERE id = $3',
+      [google_id, avatar || null, user.id]
+    );
+  }
+
+  if (!user.active) throw { status: 403, message: 'Conta desativada.' };
+
+  const token = signToken(user);
+  return { user, token };
+}
+
+module.exports = { register, login, googleAuth };

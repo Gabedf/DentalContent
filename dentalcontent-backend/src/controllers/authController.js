@@ -64,4 +64,18 @@ async function resetPassword(req, res, next) {
   }
 }
 
-module.exports = { register, login, me, forgotPassword, resetPassword };
+
+async function googleLogin(req, res, next) {
+  try {
+    const { google_id, email, name, avatar } = req.body;
+    if (!google_id || !email) {
+      return res.status(400).json({ error: 'google_id e email são obrigatórios.' });
+    }
+    const data = await authService.googleAuth({ google_id, email, name, avatar });
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, me, forgotPassword, resetPassword, googleLogin };
