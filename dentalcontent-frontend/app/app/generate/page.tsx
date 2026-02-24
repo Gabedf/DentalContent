@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import ImageGenerator from '@/components/ImageGenerator'
 import Topbar from '@/components/layout/Topbar'
 import { Select, Input } from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
@@ -213,6 +214,12 @@ export default function GeneratePage() {
                     <Button variant="primary" size="sm" onClick={handleSchedule} loading={scheduleMutation.isPending}>Confirmar</Button>
                   </div>
                 )}
+
+                {/* Geração de imagem */}
+                <ImageGenerator
+                  contentType={result.content_type}
+                  theme={form.theme}
+                />
               </>
             )}
           </div>
