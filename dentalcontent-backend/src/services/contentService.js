@@ -20,7 +20,7 @@ async function generateContent(userId, { profile_id, content_type, theme, object
 
   // Chama OpenAI
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-4o-mini',
     temperature: 0.7,
     max_tokens: 2000,
     messages: [
