@@ -1,11 +1,12 @@
 const router  = require('express').Router();
 const auth    = require('../middleware/auth');
-const { checkPlanLimit } = require('../middleware/planLimit');
+const { checkPlanLimit, checkFreeTrialExpired } = require('../middleware/planLimit');
 const ctrl    = require('../controllers/contentController');
 
 router.use(auth);
+router.use(checkFreeTrialExpired); // bloqueia grátis expirado em todas as rotas
 
-// Estatísticas (antes de /:id para não conflitar)
+// Estatísticas
 router.get('/usage', ctrl.usage);
 
 // Bateria editorial
@@ -18,7 +19,7 @@ router.post('/generate', checkPlanLimit, ctrl.generate);
 // Listagem
 router.get('/', ctrl.list);
 
-// Por ID — editar, regenerar seção, status, agendamento
+// Por ID
 router.patch('/:id',           ctrl.update);
 router.post('/:id/regenerate', checkPlanLimit, ctrl.regenerateSection);
 router.patch('/:id/status',    ctrl.updateStatus);
