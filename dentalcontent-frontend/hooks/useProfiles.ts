@@ -43,3 +43,17 @@ export function useUpdateProfile() {
     onError: (err: any) => toast.error(err.response?.data?.error || 'Erro ao atualizar.'),
   })
 }
+
+export function useDeleteProfile() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/profiles/${id}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['profiles'] })
+      toast.success('Perfil excluído.')
+    },
+    onError: (err: any) => toast.error(err.response?.data?.error || 'Erro ao excluir perfil.'),
+  })
+}

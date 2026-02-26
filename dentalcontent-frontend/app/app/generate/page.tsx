@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import ImageGenerator from '@/components/ImageGenerator'
 import Topbar from '@/components/layout/Topbar'
 import { Select, Input, Textarea } from '@/components/ui/Input'
@@ -240,6 +241,7 @@ function CarouselSection({ content, onSave, onRegen, regeningSection }: any) {
 
 // ── Página principal ──────────────────────────────────────────────
 export default function GeneratePage() {
+  const router = useRouter()
   const { data: profiles } = useProfiles()
   const generateMutation      = useGenerate()
   const updateContentMutation = useUpdateContent()
@@ -303,9 +305,24 @@ export default function GeneratePage() {
           <div className="bg-surface border border-border rounded-xl p-6 shadow-card sticky top-16">
             <h2 className="font-playfair font-semibold text-[15px] text-ink mb-5 tracking-tight">Parâmetros</h2>
             <div className="flex flex-col gap-4">
-              <Select label="Perfil" value={form.profile_id} onChange={e => set('profile_id', e.target.value)}>
+              <Select
+                label="Perfil"
+                value={form.profile_id}
+                onChange={e => {
+                  if (e.target.value === '__create__') {
+                    router.push('/app/profiles?from=generate')
+                    return
+                  }
+                  set('profile_id', e.target.value)
+                }}
+              >
                 <option value="">Selecione um perfil...</option>
-                {profiles?.map(p => <option key={p.id} value={p.id}>{p.name} — {p.subniche === 'estetico' ? 'Estético' : 'Implante'} · {p.city}</option>)}
+                {profiles?.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} — {p.subniche === 'estetico' ? 'Estético' : 'Implante'} · {p.city}
+                  </option>
+                ))}
+                <option value="__create__">+ Criar novo perfil...</option>
               </Select>
               <Select label="Tipo de conteúdo" value={form.content_type} onChange={e => set('content_type', e.target.value)}>
                 <option value="educativo">Educativo</option>

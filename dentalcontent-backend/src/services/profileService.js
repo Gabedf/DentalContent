@@ -45,4 +45,12 @@ async function updateProfile(profileId, userId, fields) {
   return result.rows[0];
 }
 
-module.exports = { createProfile, getProfiles, updateProfile };
+async function deleteProfile(profileId, userId) {
+  const result = await db.query(
+    'DELETE FROM profiles WHERE id = $1 AND user_id = $2 RETURNING id',
+    [profileId, userId]
+  );
+  if (result.rows.length === 0) throw { status: 404, message: 'Perfil não encontrado.' };
+}
+
+module.exports = { createProfile, getProfiles, updateProfile, deleteProfile };

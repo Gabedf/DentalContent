@@ -35,4 +35,13 @@ async function update(req, res, next) {
   }
 }
 
-module.exports = { create, list, update };
+async function remove(req, res, next) {
+  try {
+    await profileService.deleteProfile(req.params.id, req.user.id);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { create, list, update, remove };
