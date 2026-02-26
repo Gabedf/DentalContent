@@ -15,6 +15,9 @@ const IMAGE_LIMITS = {
   clinica:   60,
 };
 
+// Duração do trial gratuito: 3 meses = 90 dias
+const FREE_TRIAL_DAYS = 90;
+
 // ── Helpers de contagem ───────────────────────────────────────────
 
 async function getMonthlyCount(userId) {
@@ -54,6 +57,56 @@ async function getCurrentPlan(userId) {
   );
   if (result.rows.length === 0) throw { status: 401, message: 'Usuário não encontrado.' };
   return result.rows[0].plan;
+}
+
+// ── NOVO: Verifica se trial gratuito expirou ──────────────────────
+async function checkFreeTrialExpired(req, res, next) {
+  try {
+    const userId = req.user.id;
+
+    // Busca plano e data de criação do banco
+    const result = await db.query(
+      'SELECT plan, created_at FROM users WHERE id = $1 AND active = true',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Usuário não encontrado.' });
+    }
+
+    const { plan, created_at } = result.rows[0];
+
+    // Só aplica verificação para plano gratuito
+    if (plan !== 'gratis') {
+      req.user.plan = plan; // injeta plan atualizado
+      return next();
+    }
+
+    // Calcula dias desde criação da conta
+    const createdAt = new Date(created_at);
+    const now = new Date();
+    const daysSinceCreation = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
+
+    // Verifica se passou do período de trial
+    if (daysSinceCreation > FREE_TRIAL_DAYS) {
+      return res.status(403).json({
+        error: 'Período de teste expirado.',
+        message: 'Seu período de teste de 3 meses expirou. Faça upgrade para continuar gerando conteúdo.',
+        expired: true,
+        days_since_creation: daysSinceCreation,
+        trial_limit_days: FREE_TRIAL_DAYS,
+        upgrade_required: true,
+      });
+    }
+
+    // Trial ainda válido
+    req.user.plan = plan; // injeta plan atualizado
+    req.trialDaysRemaining = FREE_TRIAL_DAYS - daysSinceCreation;
+    next();
+  } catch (err) {
+    console.error('Erro ao verificar trial:', err);
+    next(err);
+  }
 }
 
 // ── Middlewares ───────────────────────────────────────────────────
@@ -134,4 +187,12 @@ async function checkImageLimit(req, res, next) {
   }
 }
 
-module.exports = { checkPlanLimit, getMonthlyCount, PLAN_LIMITS, checkImageLimit, IMAGE_LIMITS };
+module.exports = {
+  checkPlanLimit,
+  checkImageLimit,
+  checkFreeTrialExpired,
+  getMonthlyCount,
+  PLAN_LIMITS,
+  IMAGE_LIMITS,
+  FREE_TRIAL_DAYS,
+};
