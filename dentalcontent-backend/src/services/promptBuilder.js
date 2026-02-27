@@ -75,4 +75,94 @@ Retorne EXATAMENTE o seguinte JSON (sem markdown, sem texto fora do JSON):
 }`;
 }
 
-module.exports = { buildSystemPrompt, buildUserPrompt };
+const SECTION_FORMATS = {
+  headlines:     '["Headline 1", "Headline 2", "Headline 3"]',
+  caption:       '"Legenda completa aqui..."',
+  short_version: '"Versão resumida aqui..."',
+  hashtags:      '["#hashtag1", "#hashtag2", "... (15 a 20 no total)"]',
+  carousel:      '[{ "slide": 1, "title": "...", "content": "...", "visual_suggestion": "..." }, ...]',
+};
+
+const MONTH_NAMES = [
+  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro',
+];
+
+function buildRegenerateSectionPrompt({ section, profile, content_type, theme, objective, tone, currentContent }) {
+  return `Você é um especialista em marketing de conteúdo para dentistas no Brasil.
+
+Regere APENAS a seção "${section}" do seguinte conteúdo de Instagram, mantendo coerência com o restante.
+
+CONTEXTO DO CONTEÚDO:
+- Dentista: ${profile.name}
+- Especialidade: ${SUBNICHE_LABELS[profile.subniche]}
+- Cidade: ${profile.city}
+- Tipo: ${CONTENT_TYPE_LABELS[content_type]}
+- Tema: ${theme}
+- Objetivo: ${OBJECTIVE_LABELS[objective]}
+- Tom: ${tone}
+
+CONTEÚDO ATUAL (para referência e coerência):
+Headlines: ${JSON.stringify(currentContent.headlines)}
+Legenda (início): ${String(currentContent.caption || '').substring(0, 200)}...
+
+REGRAS OBRIGATÓRIAS DO CRO:
+- Nunca prometa resultados específicos
+- Sem linguagem sensacionalista
+- Conteúdo ético e baseado em evidências
+
+Retorne EXATAMENTE o seguinte JSON (sem markdown, sem texto fora do JSON):
+{ "${section}": ${SECTION_FORMATS[section]} }
+
+A nova versão deve ser diferente da atual e melhorar o engajamento.`;
+}
+
+function buildBatchSuggestionPrompt({ profile, postsPerWeek, targetMonth, targetYear }) {
+  const monthName = MONTH_NAMES[targetMonth - 1];
+  const totalPosts = postsPerWeek * 4;
+
+  return `Você é um estrategista de conteúdo para dentistas no Brasil.
+
+Crie um plano editorial estratégico para ${monthName} de ${targetYear}.
+
+PERFIL DO DENTISTA:
+- Nome: ${profile.name}
+- Especialidade: ${SUBNICHE_LABELS[profile.subniche]}
+- Cidade: ${profile.city}
+- Tom preferido: ${profile.preferred_tone}
+
+PARÂMETROS:
+- Posts por semana: ${postsPerWeek}
+- Total de posts no mês: ${totalPosts}
+- Distribua uniformemente pelas 4 semanas do mês
+
+REGRAS OBRIGATÓRIAS DO CRO:
+- Nunca prometa resultados específicos
+- Sem linguagem sensacionalista
+- Conteúdo ético, informativo e baseado em evidências
+
+Retorne EXATAMENTE o seguinte JSON (sem markdown, sem texto fora do JSON):
+
+{
+  "strategy_summary": "Resumo em 1-2 frases da estratégia geral para ${monthName}",
+  "suggestions": [
+    {
+      "content_type": "educativo",
+      "theme": "Tema específico do post",
+      "objective": "educar",
+      "tone": "${profile.preferred_tone}",
+      "suggested_week": 1,
+      "suggested_day_of_week": 1,
+      "rationale": "Breve justificativa estratégica para este post"
+    }
+  ]
+}
+
+Gere exatamente ${totalPosts} sugestões. Varie os tipos de conteúdo estrategicamente.
+Valores válidos para content_type: educativo, autoridade, quebra_objecao, bastidores, depoimento, procedimento.
+Valores válidos para objective: atrair_pacientes, educar, construir_autoridade.
+Valores válidos para tone: acessivel, formal, tecnico, humanizado.
+suggested_week deve ser 1, 2, 3 ou 4. suggested_day_of_week deve ser 1 (seg), 3 (qua) ou 5 (sex).`;
+}
+
+module.exports = { buildSystemPrompt, buildUserPrompt, buildRegenerateSectionPrompt, buildBatchSuggestionPrompt };
